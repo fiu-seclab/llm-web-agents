@@ -9,3 +9,4 @@ third-party-services/constants.js
 third-party-services/database_*.db
 third-party-services/captcha_samples
 .env
+adhoc-scripts/
