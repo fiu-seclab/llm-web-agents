@@ -1,0 +1,12 @@
+[project]
+name = "seeact-app"
+version = "0.1.0"
+description = "SeeAct - UI-grounded agent for web task automation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "seeact>=0.1.0",
+    "playwright>=1.40.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+]

@@ -1,0 +1,46 @@
+module.exports = {
+
+    TARGET_URL_V2: "",
+    RECAPTCHA_KEY_V2: "",
+    RECAPTCHA_SECRET_V2: "",
+
+    TARGET_URL_V2_INVIS: "",
+    RECAPTCHA_KEY_V2_INVIS: "",
+    RECAPTCHA_SECRET_V2_INVIS: "",
+
+    TARGET_URL_V3: "",
+    RECAPTCHA_KEY_V3: "",
+    RECAPTCHA_SECRET_V3: "",
+
+    TARGET_URL_HCAP_EASY: "",
+    SITE_KEY_HCAP_EASY: "",
+    HCAPTCHA_SECRET_EASY: "",
+
+    TARGET_URL_HCAP: "",
+    SITE_KEY_HCAP: "",
+    HCAPTCHA_SECRET: "",
+
+    TARGET_URL_CF: "",
+    SITE_KEY_CF: "",
+    CF_SECRET: "",
+
+    TARGET_URL_CF_INVIS: "",
+    SITE_KEY_CF_INVIS: "",
+    CF_SECRET_INVIS: "",
+
+    TARGET_URL_CF_NON_INTERACTIVE: "",
+    SITE_KEY_CF_NON_INTERACTIVE: "",
+    CF_SECRET_NON_INTERACTIVE: "",
+
+    API_KEY_2CAPTCHA: "",
+    API_KEY_ANTICAPTCHA: "",
+    API_KEY_CAPSOLVER: "",
+    API_KEY_CAPMONSTER: "",
+    API_KEY_AZCAPTCHA: "",
+    API_KEY_BESTCAPTCHA: "",
+    API_KEY_IMAGETYPERZ: "",
+
+    // dillan: affiliate parameters giving me commission for these solves... i hope this isn't an issue?
+    SOFTWARE_ID_2CAPTCHA: 4826,
+    SOFTWARE_ID_ANTICAPTCHA: 1221,
+}
