@@ -4,7 +4,7 @@ This project includes a local customization of Browser Use to make interactions 
 
 ## What was changed
 
-The low-level interaction engine was modified in:
+The low-level interaction engine can be modified in:
 
 - `.venv/lib/python3.11/site-packages/browser_use/browser/watchdogs/default_action_watchdog.py`
 
@@ -108,3 +108,22 @@ uv run python main.py
 - If you need a permanent/portable patch, consider moving this to:
   - a forked package, or
   - a runtime monkeypatch module loaded by your app startup.
+
+
+### Using Chrome Dev Protocol
+
+To use the browser sample, you need to start Chrome with remote debugging enabled:
+
+```bash
+# Start Chrome with CDP debugging on port 9222
+google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-debug
+```
+
+### Running the Browser Sample
+
+1. Make sure Chrome is running with CDP enabled (see above).
+2. Run the sample script:
+
+```bash
+python main.py
+```

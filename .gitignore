@@ -4,9 +4,9 @@ node_modules/
 __pycache__/
 result*/
 crawlers/**/artifacts/
-artifacts/
 third-party-services/constants.js
 *.db
 third-party-services/captcha_samples
 .env
 adhoc-scripts/
+artifacts/
