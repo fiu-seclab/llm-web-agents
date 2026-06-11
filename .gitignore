@@ -6,7 +6,7 @@ result*/
 crawlers/**/artifacts/
 artifacts/
 third-party-services/constants.js
-third-party-services/database_*.db
+*.db
 third-party-services/captcha_samples
 .env
 adhoc-scripts/
