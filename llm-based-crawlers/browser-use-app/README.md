@@ -2,6 +2,8 @@
 
 This project includes a local customization of Browser Use to make interactions more human-like (inspired by HLISA-style behavior).
 
+`main.py` calls `humanize.apply()` on startup. That sets slower per-key delays and patches focus so the cursor moves to an input and clicks before typing, instead of silent `DOM.focus`. Override any `BROWSER_USE_HUMAN_*` env var to change the cadence; set `BROWSER_USE_HUMANIZE=false` to turn the layer off.
+
 ## What was changed
 
 The low-level interaction engine can be modified in:

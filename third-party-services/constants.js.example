@@ -40,7 +40,7 @@ module.exports = {
     API_KEY_BESTCAPTCHA: "",
     API_KEY_IMAGETYPERZ: "",
 
-    // dillan: affiliate parameters giving me commission for these solves... i hope this isn't an issue?
+    // optional solver affiliate / software ids
     SOFTWARE_ID_2CAPTCHA: 4826,
     SOFTWARE_ID_ANTICAPTCHA: 1221,
 }

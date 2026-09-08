@@ -8,5 +8,7 @@ third-party-services/constants.js
 *.db
 third-party-services/captcha_samples
 .env
-adhoc-scripts/
 artifacts/
+llm-based-crawlers/browser_setup/profiles/
+llm-based-crawlers/experiment_runs/
+llm-based-crawlers/skyvern-app/Skyvern/

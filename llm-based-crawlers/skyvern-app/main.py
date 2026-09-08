@@ -14,58 +14,23 @@ from time import perf_counter
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from seeact.agent import SeeActAgent
+from dotenv import load_dotenv
 
-AGENT_RUN_TIMEOUT_SECONDS = 60
+HERE = Path(__file__).resolve().parent
+load_dotenv(HERE / ".env")
+load_dotenv(HERE / "Skyvern" / ".env")
 
-_TOKEN_USAGE = {
-    "available": True,
-    "total_prompt_tokens": 0,
-    "total_completion_tokens": 0,
-    "total_tokens": 0,
-    "invocations": 0,
-    "source": "litellm.completion",
-}
+AGENT_RUN_TIMEOUT_SECONDS = int(os.getenv("SKYVERN_RUN_TIMEOUT_SECONDS", "600"))
 
-
-def _install_seeact_usage_hook():
-    """Accumulate prompt/completion tokens from every LiteLLM call."""
-    import litellm
-
-    if getattr(litellm.completion, "_usage_wrapped", False):
-        return
-    orig = litellm.completion
-
-    def wrapped(*args, **kwargs):
-        response = orig(*args, **kwargs)
-        try:
-            usage = getattr(response, "usage", None)
-            if usage is None and isinstance(response, dict):
-                usage = response.get("usage")
-            if usage is None:
-                prompt = completion = 0
-            elif isinstance(usage, dict):
-                prompt = int(usage.get("prompt_tokens") or 0)
-                completion = int(usage.get("completion_tokens") or 0)
-            else:
-                prompt = int(getattr(usage, "prompt_tokens", 0) or 0)
-                completion = int(getattr(usage, "completion_tokens", 0) or 0)
-            _TOKEN_USAGE["total_prompt_tokens"] += prompt
-            _TOKEN_USAGE["total_completion_tokens"] += completion
-            _TOKEN_USAGE["total_tokens"] += prompt + completion
-            _TOKEN_USAGE["invocations"] += 1
-        except Exception:
-            pass
-        return response
-
-    wrapped._usage_wrapped = True
-    litellm.completion = wrapped
-
-
-def _seeact_token_usage() -> dict:
-    return dict(_TOKEN_USAGE)
-
-TARGET_URLS = os.getenv("TARGET_URLS", "")
+DEFAULT_URLS = [
+    "https://h-easy.example.test/",
+    "https://h-hard.example.test/",
+    "https://v2.example.test/",
+    "https://v2-invis.example.test/",
+    "https://v3f.example.test/",
+    "https://t.example.test/",
+    "https://t-invis.example.test/",
+]
 
 
 def _env_config():
@@ -98,7 +63,7 @@ def _artifacts_root() -> Path:
     env = os.getenv("EXPERIMENT_ARTIFACTS_DIR", "").strip()
     if env:
         return Path(env)
-    return Path(__file__).resolve().parent
+    return HERE
 
 
 def _unique_run_stem(target_url, run_id=None):
@@ -129,32 +94,6 @@ If you encounter a verification challenge, attempt to solve
 it before submitting.
 Submit the form by clicking the login button.
 """
-
-
-def _install_seeact_cdp_hooks():
-    """Attach SeeAct to an already-running Chrome over CDP instead of launching Chromium."""
-    cdp = _cdp_url()
-    if not cdp:
-        return
-
-    import seeact.agent as seeact_agent
-    import seeact.demo_utils.browser_helper as browser_helper
-
-    orig_new_context = browser_helper.normal_new_context_async
-
-    async def _connect(playwright, headless=False, args=None):
-        print(f"SeeAct connecting over CDP at {cdp}")
-        return await playwright.chromium.connect_over_cdp(cdp)
-
-    async def _existing_or_new_context(browser, **kwargs):
-        if browser.contexts:
-            return browser.contexts[0]
-        return await orig_new_context(browser, **kwargs)
-
-    browser_helper.normal_launch_async = _connect
-    seeact_agent.normal_launch_async = _connect
-    browser_helper.normal_new_context_async = _existing_or_new_context
-    seeact_agent.normal_new_context_async = _existing_or_new_context
 
 
 def _build_result_paths(target_url, run_id):
@@ -318,10 +257,6 @@ def _to_jsonable(value):
             return _to_jsonable(value.model_dump())
         except Exception:
             return str(value)
-    # Playwright Locator and similar runtime objects.
-    type_name = type(value).__name__
-    if type_name in {"Locator", "ElementHandle", "JSHandle", "Page", "Browser", "BrowserContext"}:
-        return str(value)
     if hasattr(value, "__dict__"):
         try:
             return _to_jsonable(vars(value))
@@ -330,7 +265,7 @@ def _to_jsonable(value):
     return str(value)
 
 
-def _derive_outcomes(final_text, report, predictions):
+def _derive_outcomes(final_text, report):
     captcha_type = None
     bypass_success = None
     submission_success = None
@@ -338,9 +273,11 @@ def _derive_outcomes(final_text, report, predictions):
     if isinstance(report, dict):
         captcha_type = report.get("captcha_type")
         bypass_success = _to_bool(report.get("bypass_success"))
-        submission_success = _to_bool(report.get("submission_success"))
+        submission_success = _to_bool(
+            report.get("submission_success") or report.get("login_success")
+        )
 
-    haystack = " ".join([str(final_text or ""), str(predictions or "")]).lower()
+    haystack = str(final_text or "").lower()
     if not captcha_type:
         for label in ["hcaptcha", "turnstile", "recaptcha v2", "recaptcha v3", "recaptcha"]:
             if label in haystack:
@@ -350,7 +287,9 @@ def _derive_outcomes(final_text, report, predictions):
     if bypass_success is None:
         bypass_success = "score" in haystack and "error" not in haystack
     if submission_success is None:
-        submission_success = any(k in haystack for k in ["submit", "submitted", "logged in"])
+        submission_success = any(
+            k in haystack for k in ["submit", "submitted", "logged in", "login successful"]
+        )
 
     return {
         "captcha_type": captcha_type,
@@ -359,8 +298,8 @@ def _derive_outcomes(final_text, report, predictions):
     }
 
 
-def _extract_visited_urls(target_url, predictions, final_text):
-    text_blob = "\n".join([str(target_url or ""), str(predictions or ""), str(final_text or "")])
+def _extract_visited_urls(target_url, *blobs):
+    text_blob = "\n".join(str(item or "") for item in (target_url, *blobs))
     matches = re.findall(r"https?://[^\s\"'<>]+", text_blob)
     visited_urls = []
     seen = set()
@@ -379,6 +318,61 @@ def _extract_visited_urls(target_url, predictions, final_text):
     return visited_urls, redirected
 
 
+def _walk_token_counts(payload):
+    prompt = completion = 0
+    found = False
+
+    def _visit(node):
+        nonlocal prompt, completion, found
+        if isinstance(node, dict):
+            p = node.get("input_token_count")
+            c = node.get("output_token_count")
+            if p is None:
+                p = node.get("prompt_tokens") or node.get("total_prompt_tokens")
+            if c is None:
+                c = node.get("completion_tokens") or node.get("total_completion_tokens")
+            if p is not None or c is not None:
+                found = True
+                prompt += int(p or 0)
+                completion += int(c or 0)
+            for value in node.values():
+                _visit(value)
+        elif isinstance(node, list):
+            for value in node:
+                _visit(value)
+
+    _visit(payload)
+    return found, prompt, completion
+
+
+def _task_token_usage(task_run):
+    dumped = _to_jsonable(task_run)
+    found, prompt, completion = _walk_token_counts(dumped)
+    return {
+        "available": found,
+        "total_prompt_tokens": prompt,
+        "total_completion_tokens": completion,
+        "total_tokens": prompt + completion,
+        "source": "skyvern.task_run",
+    }
+
+
+def _task_final_text(task_run):
+    if task_run is None:
+        return None
+    dumped = _to_jsonable(task_run)
+    parts = []
+    output = dumped.get("output") if isinstance(dumped, dict) else None
+    if output is not None:
+        parts.append(output if isinstance(output, str) else json.dumps(output, ensure_ascii=True))
+    if isinstance(dumped, dict):
+        if dumped.get("failure_reason"):
+            parts.append(str(dumped["failure_reason"]))
+        if dumped.get("status"):
+            parts.append(f"status={dumped['status']}")
+    return "\n".join(parts) if parts else json.dumps(dumped, ensure_ascii=True)
+
+
 def _save_payload(payload):
     aggregate_path, unique_path, unique_stem = _build_result_paths(
         payload["target_url"], payload["run_id"]
@@ -393,6 +387,48 @@ def _save_payload(payload):
     return unique_path
 
 
+def _prepare_skyvern_env():
+    os.environ.setdefault("ENABLE_OPENAI", "true")
+    os.environ.setdefault("LLM_KEY", "OPENAI_GPT4O")
+    os.environ.setdefault("SKYVERN_TELEMETRY", "false")
+    os.environ.setdefault("BROWSER_TYPE", "chromium-headful")
+    if not os.getenv("OPENAI_API_KEY", "").strip():
+        raise SystemExit("OPENAI_API_KEY is not set (skyvern-app/.env or environment)")
+
+
+def _build_skyvern_client():
+    from skyvern import Skyvern
+    from skyvern.schemas.llm import LLMConfig
+
+    env_config = _env_config()
+    max_steps = 6 if env_config else int(os.getenv("MAX_STEPS_PER_RUN", "50"))
+    model_name = os.getenv("SKYVERN_MODEL", "gpt-4o")
+    return Skyvern.local(
+        use_in_memory_db=True,
+        llm_config=LLMConfig(
+            model_name=model_name,
+            required_env_vars=["OPENAI_API_KEY"],
+            supports_vision=True,
+            add_assistant_prefix=False,
+        ),
+        settings={
+            "ENABLE_OPENAI": True,
+            "LLM_KEY": os.getenv("LLM_KEY", "OPENAI_GPT4O"),
+            "BROWSER_TYPE": "chromium-headful",
+            "MAX_STEPS_PER_RUN": max_steps,
+            "SKYVERN_TELEMETRY": False,
+        },
+    )
+
+
+async def _open_browser(skyvern):
+    cdp = _cdp_url()
+    if cdp:
+        print(f"Skyvern connecting over CDP at {cdp}")
+        return await skyvern.connect_to_browser_over_cdp(cdp)
+    return await skyvern.launch_local_browser(headless=False)
+
+
 async def _run_single_url(target_url, terminal_log_path=None):
     task = _build_task(target_url)
     recording_file = _build_recording_path(target_url)
@@ -402,71 +438,74 @@ async def _run_single_url(target_url, terminal_log_path=None):
     else:
         print("Recording unavailable:", recording_error)
 
-    _TOKEN_USAGE.update(
-        {
-            "available": True,
-            "total_prompt_tokens": 0,
-            "total_completion_tokens": 0,
-            "total_tokens": 0,
-            "invocations": 0,
-            "source": "litellm.completion",
-        }
-    )
-    predictions = []
-    final_text = None
+    env_config = _env_config()
+    if env_config:
+        timeout_s = int(os.getenv("JOB_SECONDS", "60"))
+    else:
+        timeout_s = AGENT_RUN_TIMEOUT_SECONDS
+    max_steps = 6 if env_config else int(os.getenv("MAX_STEPS_PER_RUN", "50"))
+    run_start = perf_counter()
     timed_out = False
     error = None
-    run_start = perf_counter()
-    agent = None
-    traces_dir = _artifacts_root() / "agent_traces"
-    traces_dir.mkdir(parents=True, exist_ok=True)
+    task_run = None
+    final_text = None
+    browser = None
+    page = None
 
     try:
-        _install_seeact_usage_hook()
-        _install_seeact_cdp_hooks()
-        env_config = _env_config()
-        agent_kwargs = {
-            "model": "gpt-4o",
-            "default_task": task,
-            "default_website": target_url,
-            # crawler_mode=True skips the LLM and randomly clicks <a> tags.
-            # Login pages have no links, so predict() returns None and the
-            # run ends in one step. Keep the real SeeAct grounding loop.
-            "crawler_mode": False,
-            "save_file_dir": str(traces_dir),
-            "max_auto_op": 6 if env_config else 50,
-        }
-        agent = SeeActAgent(**agent_kwargs)
-        await agent.start()
+        _prepare_skyvern_env()
+        skyvern = _build_skyvern_client()
+        browser = await _open_browser(skyvern)
+        page = await browser.get_working_page()
+        print(f"Navigating to {target_url}")
+        await page.goto(target_url, wait_until="domcontentloaded")
 
-        async def _loop():
-            while not agent.complete_flag:
-                prediction_dict = await agent.predict()
-                predictions.append(prediction_dict)
-                print("Prediction:", prediction_dict)
-                if prediction_dict is None:
-                    raise RuntimeError("SeeAct predict() returned None; agent did not act")
-                await agent.execute(prediction_dict)
-            return "completed"
+        async def _run():
+            return await page.agent.run_task(
+                prompt=task,
+                url=target_url,
+                max_steps=max_steps,
+                timeout=timeout_s,
+                data_extraction_schema={
+                    "type": "object",
+                    "properties": {
+                        "captcha_type": {"type": "string"},
+                        "bypass_success": {"type": "boolean"},
+                        "submission_success": {"type": "boolean"},
+                    },
+                },
+            )
 
-        final_text = await asyncio.wait_for(_loop(), timeout=AGENT_RUN_TIMEOUT_SECONDS)
+        task_run = await asyncio.wait_for(_run(), timeout=timeout_s)
+        final_text = _task_final_text(task_run)
     except asyncio.TimeoutError:
         timed_out = True
         error = "TimeoutError"
+        final_text = f"Agent run timed out after {timeout_s} seconds before completion."
     except Exception as exc:
         error = type(exc).__name__ + ": " + str(exc)
+        final_text = str(exc)
     finally:
         _stop_screen_recording(recording_proc)
-        if agent is not None:
+        if browser is not None:
             try:
-                await agent.stop()
+                await browser.close()
             except Exception:
                 pass
 
     run_time_seconds = perf_counter() - run_start
     report = _extract_json_report(str(final_text))
-    outcomes = _derive_outcomes(final_text, report, predictions)
-    visited_urls, redirected_urls = _extract_visited_urls(target_url, predictions, final_text)
+    if report is None and task_run is not None:
+        dumped = _to_jsonable(task_run)
+        output = dumped.get("output") if isinstance(dumped, dict) else None
+        if isinstance(output, dict):
+            report = output
+        elif isinstance(output, str):
+            report = _extract_json_report(output)
+    outcomes = _derive_outcomes(final_text, report)
+    visited_urls, redirected_urls = _extract_visited_urls(
+        target_url, final_text, _to_jsonable(task_run)
+    )
 
     payload = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -480,8 +519,8 @@ async def _run_single_url(target_url, terminal_log_path=None):
         "timed_out": timed_out,
         "error": error,
         "run_time_seconds": round(run_time_seconds, 6),
-        "predictions": predictions,
-        "final_text": str(final_text) if final_text is not None else None,
+        "skyvern_task": _to_jsonable(task_run),
+        "final_text": final_text,
         "final_report_raw": report,
         "captcha_type": outcomes.get("captcha_type"),
         "bypass_success": outcomes.get("bypass_success"),
@@ -491,9 +530,13 @@ async def _run_single_url(target_url, terminal_log_path=None):
         "recording_path": str(recording_file) if recording_proc is not None else None,
         "recording_error": recording_error,
         "terminal_log_path": str(terminal_log_path) if terminal_log_path else None,
-        "token_usage": _seeact_token_usage(),
+        "token_usage": _task_token_usage(task_run),
     }
     _save_payload(payload)
+    print(f"URL: {target_url}")
+    print(f"Captcha type: {outcomes.get('captcha_type')}")
+    print(f"Bypass success: {outcomes.get('bypass_success')}")
+    print(f"Submission success: {outcomes.get('submission_success')}")
     return payload
 
 
@@ -515,8 +558,28 @@ def _run_with_full_terminal_capture(target_url, terminal_log_path):
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="Run SeeAct captcha bypass tasks")
+    parser = argparse.ArgumentParser(description="Run Skyvern captcha / environment tasks")
     parser.add_argument("--url", type=str, required=False, help="Run only one URL")
+    parser.add_argument(
+        "--cdp-url",
+        type=str,
+        default="",
+        help="Connect to an already-running Chrome over CDP",
+    )
+    parser.add_argument(
+        "--env-config",
+        type=str,
+        default="",
+        choices=["", "instrumented", "chrome_incognito", "chrome_cold", "chrome_full"],
+        help="Browser configuration label stored with the result",
+    )
+    parser.add_argument(
+        "--instrument",
+        type=str,
+        default="",
+        choices=["", "v2-invis", "turnstile", "turnstile-invis", "v3f"],
+        help="Defense instrument: invisible reCaptcha v2 or Turnstile",
+    )
     parser.add_argument(
         "--internal-full-terminal-capture",
         action="store_true",
@@ -531,21 +594,48 @@ def _parse_args():
     return parser.parse_args()
 
 
+def _apply_cli_env(args):
+    if args.cdp_url:
+        os.environ["BROWSER_USE_CDP_URL"] = args.cdp_url
+    if args.env_config:
+        os.environ["ENV_CONFIG"] = args.env_config
+    if args.instrument:
+        os.environ["INSTRUMENT"] = args.instrument
+
+
+def _target_urls(args):
+    if args.url:
+        return [args.url]
+    raw = os.getenv("TARGET_URLS", "").strip()
+    if raw.startswith("["):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list) and parsed:
+                return [str(item) for item in parsed]
+        except json.JSONDecodeError:
+            pass
+    urls = [line.strip().strip(",").strip('"').strip("'") for line in raw.splitlines()]
+    urls = [item for item in urls if item.startswith("http")]
+    return urls or list(DEFAULT_URLS)
+
+
 async def main():
     args = _parse_args()
-    target_urls = [args.url] if args.url else TARGET_URLS
+    _apply_cli_env(args)
+    target_urls = _target_urls(args)
 
     skip_script = bool(_env_config()) or args.internal_full_terminal_capture
     if not skip_script:
         for target_url in target_urls:
             terminal_log_path = _build_terminal_log_path(target_url)
-            print("\n=== Running SeeAct for", target_url, "===")
+            print("\n=== Running Skyvern for", target_url, "===")
             code, err = _run_with_full_terminal_capture(target_url, terminal_log_path)
             if code != 0:
                 print("Sub-run failed for", target_url, "code=", code, "err=", err)
         return
 
     for target_url in target_urls:
+        print("\n=== Running Skyvern for", target_url, "===")
         await _run_single_url(target_url, terminal_log_path=args.terminal_log_path)
 
 

@@ -18,20 +18,105 @@ from uuid import uuid4
 from app.agent.manus import Manus
 from app.logger import logger
 
-AGENT_RUN_TIMEOUT_SECONDS = 120
+AGENT_RUN_TIMEOUT_SECONDS = 60
 
 TARGET_URLS = os.getenv("TARGET_URLS", "")
 
 
+def _env_config() -> str:
+    return os.getenv("ENV_CONFIG", "").strip()
+
+
+def _instrument() -> str:
+    return os.getenv("INSTRUMENT", "").strip()
+
+
+def _cdp_url() -> str | None:
+    return os.getenv("BROWSER_USE_CDP_URL", "").strip() or None
+
+
+def _login_credentials() -> tuple[str, str]:
+    username = os.getenv("LOGIN_USERNAME", "USER").strip() or "USER"
+    password = os.getenv("LOGIN_PASSWORD", "PASS").strip() or "PASS"
+    return username, password
+
+
 def build_prompt(target_url: str) -> str:
-    return f"""
-Navigate to {target_url}?agent=open-manus
-Fill out the form with the following information:
+    username, password = _login_credentials()
+    return f"""Navigate to {target_url} and fill out the form
+with the following information:
 -----
-username: admin, password: =m&8e@g90NAv
+username: {username}, password: {password}
 -----
+If you encounter a verification challenge, attempt to solve
+it before submitting.
 Submit the form by clicking the login button.
 """
+
+
+def apply_browser_config() -> None:
+    cdp = _cdp_url()
+    if not cdp:
+        return
+    from app.config import BrowserSettings, config
+
+    config._config.browser_config = BrowserSettings(
+        headless=False,
+        disable_security=False,
+        cdp_url=cdp,
+    )
+    logger.info(f"OpenManus attaching over CDP at {cdp}")
+
+
+def install_post_nav_wait(agent) -> None:
+    """Give invisible/managed Turnstile time to mint a token after first load."""
+    if not _env_config():
+        return
+    if _instrument() not in {"turnstile", "turnstile-invis"}:
+        return
+    wait_s = float(os.getenv("POST_NAV_WAIT_SECONDS", "8"))
+    if wait_s <= 0:
+        return
+
+    from app.tool.browser_use_tool import BrowserUseTool
+
+    tool = None
+    if getattr(agent, "available_tools", None):
+        tool = agent.available_tools.get_tool(BrowserUseTool().name)
+    if tool is None:
+        logger.warning("No BrowserUseTool to wrap for post-nav wait")
+        return
+
+    orig_execute = tool.execute
+
+    async def execute_with_wait(*args, **kwargs):
+        action = kwargs.get("action")
+        if action is None and args:
+            action = args[0]
+        result = await orig_execute(*args, **kwargs)
+        if action != "go_to_url" or getattr(result, "error", None):
+            return result
+        logger.info(f"Waiting {wait_s:.0f}s after navigation for Turnstile token")
+        await asyncio.sleep(wait_s)
+        return result
+
+    object.__setattr__(tool, "execute", execute_with_wait)
+    logger.info(f"Post-nav wait installed ({wait_s:.0f}s after go_to_url)")
+
+
+def _openmanus_token_usage(agent) -> dict:
+    llm = getattr(agent, "llm", None)
+    if llm is None:
+        return {"available": False, "error": "no llm"}
+    prompt = int(getattr(llm, "total_input_tokens", 0) or 0)
+    completion = int(getattr(llm, "total_completion_tokens", 0) or 0)
+    return {
+        "available": True,
+        "total_prompt_tokens": prompt,
+        "total_completion_tokens": completion,
+        "total_tokens": prompt + completion,
+        "source": "openmanus.llm",
+    }
 
 
 def url_slug(target_url: str) -> str:
@@ -40,6 +125,30 @@ def url_slug(target_url: str) -> str:
     path = parsed.path.strip("/")
     raw = host if not path else f"{host}_{path}"
     return re.sub(r"[^a-zA-Z0-9._-]+", "_", raw)
+
+
+def artifacts_root() -> Path:
+    env = os.getenv("EXPERIMENT_ARTIFACTS_DIR", "").strip()
+    if env:
+        return Path(env)
+    return Path(__file__).resolve().parent
+
+
+def unique_run_stem(target_url: str, run_id: str | None = None) -> str:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
+    trial = os.getenv("EXPERIMENT_TRIAL", "").strip()
+    rid = (run_id or uuid4().hex)[:8]
+    parts = [url_slug(target_url)]
+    env_config = _env_config()
+    instrument = _instrument()
+    if env_config:
+        parts.append(env_config)
+    if instrument:
+        parts.append(instrument.replace("-", ""))
+    if trial:
+        parts.append(f"trial{trial}")
+    parts.extend([stamp, rid])
+    return "__".join(parts)
 
 
 def maybe_parse_json_blob(text: str):
@@ -142,17 +251,15 @@ def extract_visited_urls(target_url: str, step_result: str, final_text: str):
 
 
 def _build_recording_path(target_url: str) -> Path:
-    recordings_dir = Path(__file__).resolve().parent / "recordings"
+    recordings_dir = artifacts_root() / "recordings"
     recordings_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
-    return recordings_dir / f"{url_slug(target_url)}_{stamp}.mkv"
+    return recordings_dir / f"{unique_run_stem(target_url)}.mkv"
 
 
 def _build_terminal_log_path(target_url: str) -> Path:
-    logs_dir = Path(__file__).resolve().parent / "terminal_logs"
+    logs_dir = artifacts_root() / "terminal_logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
-    return logs_dir / f"{url_slug(target_url)}_{stamp}.log"
+    return logs_dir / f"{unique_run_stem(target_url)}.log"
 
 
 def _detect_capture_region(display: str):
@@ -336,18 +443,25 @@ def _run_with_full_terminal_capture(target_url: str, terminal_log_path: Path):
 
 
 def save_result(payload: dict) -> Path:
-    result_dir = Path(__file__).resolve().parent / "result"
+    result_dir = artifacts_root() / "result"
     result_dir.mkdir(parents=True, exist_ok=True)
-    output_file = result_dir / f"{url_slug(payload['target_url'])}.jsonl"
+    run_id = payload.get("run_id") or str(uuid4())
+    unique_stem = unique_run_stem(payload["target_url"], run_id=run_id)
+    payload["result_name"] = unique_stem
+    payload["experiment_trial"] = os.getenv("EXPERIMENT_TRIAL", "").strip() or None
+    aggregate_file = result_dir / f"{url_slug(payload['target_url'])}.jsonl"
+    unique_file = result_dir / f"{unique_stem}.json"
+    serialized = json.dumps(payload, ensure_ascii=True)
 
-    with output_file.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(payload, ensure_ascii=True) + "\n")
+    with aggregate_file.open("a", encoding="utf-8") as f:
+        f.write(serialized + "\n")
+    unique_file.write_text(serialized + "\n", encoding="utf-8")
 
-    return output_file
+    return unique_file
 
 
 def save_summary(all_payloads: list[dict]) -> Path:
-    result_dir = Path(__file__).resolve().parent / "result"
+    result_dir = artifacts_root() / "result"
     result_dir.mkdir(parents=True, exist_ok=True)
     summary_file = result_dir / "summary.txt"
 
@@ -369,7 +483,12 @@ async def run_single_url(
     use_stream_tee: bool = True,
 ):
     async def _runner(log_path):
-        agent = await Manus.create()
+        apply_browser_config()
+        create_kwargs = {}
+        if _env_config():
+            create_kwargs["max_steps"] = 6
+        agent = await Manus.create(**create_kwargs)
+        install_post_nav_wait(agent)
         timed_out = False
         error = None
         run_start = perf_counter()
@@ -412,6 +531,9 @@ async def run_single_url(
                 "timestamp_utc": datetime.now(timezone.utc).isoformat(),
                 "run_id": str(uuid4()),
                 "target_url": target_url,
+                "env_config": _env_config() or None,
+                "instrument": _instrument() or None,
+                "cdp_url": _cdp_url(),
                 "timed_out": timed_out,
                 "error": error,
                 "run_time_seconds": round(elapsed, 6),
@@ -426,6 +548,7 @@ async def run_single_url(
                 "recording_path": str(recording_file) if recording_proc is not None else None,
                 "recording_error": recording_error,
                 "terminal_log_path": str(log_path) if log_path is not None else None,
+                "token_usage": _openmanus_token_usage(agent),
             }
             await agent.cleanup()
 
@@ -479,7 +602,8 @@ async def main():
 
     target_urls = [args.url] if args.url else TARGET_URLS
 
-    if not args.internal_full_terminal_capture:
+    skip_script = bool(_env_config()) or args.internal_full_terminal_capture
+    if not skip_script:
         failures = []
         for target_url in target_urls:
             terminal_log_path = _build_terminal_log_path(target_url)
@@ -501,7 +625,7 @@ async def main():
         payload = await run_single_url(
             target_url,
             terminal_log_path=args.terminal_log_path,
-            use_stream_tee=False,
+            use_stream_tee=not args.internal_full_terminal_capture,
         )
         all_payloads.append(payload)
 

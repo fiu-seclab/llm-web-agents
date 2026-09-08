@@ -1,0 +1,6 @@
+.venv/
+.env
+Skyvern/
+result/
+recordings/
+terminal_logs/
