@@ -1,0 +1,49 @@
+agent,defense,browser_config,outcome
+Browser-Use,Invisible reCaptcha v2,instrumented,rejected
+Browser-Use,Invisible reCaptcha v2,chrome_incognito,rejected
+Browser-Use,Invisible reCaptcha v2,chrome_cold_profile,rejected
+Browser-Use,Invisible reCaptcha v2,chrome_full_profile,admitted
+Browser-Use,reCaptcha v3,instrumented,rejected
+Browser-Use,reCaptcha v3,chrome_incognito,rejected
+Browser-Use,reCaptcha v3,chrome_cold_profile,rejected
+Browser-Use,reCaptcha v3,chrome_full_profile,admitted
+Browser-Use,Invisible Turnstile,instrumented,admitted
+Browser-Use,Invisible Turnstile,chrome_incognito,admitted
+Browser-Use,Invisible Turnstile,chrome_cold_profile,admitted
+Browser-Use,Invisible Turnstile,chrome_full_profile,admitted
+Skyvern,Invisible reCaptcha v2,instrumented,rejected
+Skyvern,Invisible reCaptcha v2,chrome_incognito,rejected
+Skyvern,Invisible reCaptcha v2,chrome_cold_profile,rejected
+Skyvern,Invisible reCaptcha v2,chrome_full_profile,admitted
+Skyvern,reCaptcha v3,instrumented,rejected
+Skyvern,reCaptcha v3,chrome_incognito,rejected
+Skyvern,reCaptcha v3,chrome_cold_profile,rejected
+Skyvern,reCaptcha v3,chrome_full_profile,admitted
+Skyvern,Invisible Turnstile,instrumented,rejected
+Skyvern,Invisible Turnstile,chrome_incognito,admitted
+Skyvern,Invisible Turnstile,chrome_cold_profile,admitted
+Skyvern,Invisible Turnstile,chrome_full_profile,admitted
+OpenManus,Invisible reCaptcha v2,instrumented,rejected
+OpenManus,Invisible reCaptcha v2,chrome_incognito,rejected
+OpenManus,Invisible reCaptcha v2,chrome_cold_profile,rejected
+OpenManus,Invisible reCaptcha v2,chrome_full_profile,rejected
+OpenManus,reCaptcha v3,instrumented,rejected
+OpenManus,reCaptcha v3,chrome_incognito,rejected
+OpenManus,reCaptcha v3,chrome_cold_profile,rejected
+OpenManus,reCaptcha v3,chrome_full_profile,admitted
+OpenManus,Invisible Turnstile,instrumented,rejected
+OpenManus,Invisible Turnstile,chrome_incognito,rejected
+OpenManus,Invisible Turnstile,chrome_cold_profile,rejected
+OpenManus,Invisible Turnstile,chrome_full_profile,rejected
+SeeAct,Invisible reCaptcha v2,instrumented,rejected
+SeeAct,Invisible reCaptcha v2,chrome_incognito,rejected
+SeeAct,Invisible reCaptcha v2,chrome_cold_profile,rejected
+SeeAct,Invisible reCaptcha v2,chrome_full_profile,rejected
+SeeAct,reCaptcha v3,instrumented,rejected
+SeeAct,reCaptcha v3,chrome_incognito,rejected
+SeeAct,reCaptcha v3,chrome_cold_profile,rejected
+SeeAct,reCaptcha v3,chrome_full_profile,admitted
+SeeAct,Invisible Turnstile,instrumented,rejected
+SeeAct,Invisible Turnstile,chrome_incognito,admitted
+SeeAct,Invisible Turnstile,chrome_cold_profile,admitted
+SeeAct,Invisible Turnstile,chrome_full_profile,admitted

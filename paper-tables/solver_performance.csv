@@ -1,0 +1,38 @@
+captcha,variant,service,trials,success_pct,median_time_s
+hCaptcha,Easy,2Captcha,100,100,67.0
+hCaptcha,Easy,ImageTyperz,100,100,42.3
+hCaptcha,Hard,2Captcha,100,58,102.5
+hCaptcha,Hard,ImageTyperz,100,100,82.7
+reCaptcha v2,Checkbox,2Captcha,100,100,10.8
+reCaptcha v2,Checkbox,Anti-Captcha,100,100,51.0
+reCaptcha v2,Checkbox,AZCaptcha,100,100,132.2
+reCaptcha v2,Checkbox,BestCaptchaSolver,100,100,60.2
+reCaptcha v2,Checkbox,CapMonster,100,100,8.4
+reCaptcha v2,Checkbox,Capsolver,100,100,11.1
+reCaptcha v2,Checkbox,ImageTyperz,100,100,49.4
+reCaptcha v2,Invisible,2Captcha,100,100,13.7
+reCaptcha v2,Invisible,Anti-Captcha,100,100,52.7
+reCaptcha v2,Invisible,AZCaptcha,100,100,101.7
+reCaptcha v2,Invisible,BestCaptchaSolver,100,100,53.5
+reCaptcha v2,Invisible,CapMonster,100,100,7.9
+reCaptcha v2,Invisible,Capsolver,100,100,7.2
+reCaptcha v2,Invisible,ImageTyperz,100,100,64.3
+reCaptcha v3,Score (>0.5),2Captcha,100,26,22.1
+reCaptcha v3,Score (>0.5),Anti-Captcha,100,30,12.1
+reCaptcha v3,Score (>0.5),AZCaptcha,100,0,17.5
+reCaptcha v3,Score (>0.5),BestCaptchaSolver,100,63,39.7
+reCaptcha v3,Score (>0.5),CapMonster,100,0,4.5
+reCaptcha v3,Score (>0.5),Capsolver,100,0,1.6
+reCaptcha v3,Score (>0.5),ImageTyperz,100,41,40.4
+Cloudflare Turnstile,Managed,2Captcha,100,100,7.2
+Cloudflare Turnstile,Managed,Anti-Captcha,100,100,20.3
+Cloudflare Turnstile,Managed,BestCaptchaSolver,100,100,71.0
+Cloudflare Turnstile,Managed,CapMonster,100,100,4.8
+Cloudflare Turnstile,Managed,Capsolver,100,100,5.5
+Cloudflare Turnstile,Managed,ImageTyperz,100,100,43.3
+Cloudflare Turnstile,Invisible,2Captcha,100,100,7.8
+Cloudflare Turnstile,Invisible,Anti-Captcha,100,100,26.1
+Cloudflare Turnstile,Invisible,BestCaptchaSolver,100,100,88.8
+Cloudflare Turnstile,Invisible,CapMonster,100,100,4.5
+Cloudflare Turnstile,Invisible,Capsolver,100,100,4.0
+Cloudflare Turnstile,Invisible,ImageTyperz,100,100,46.8

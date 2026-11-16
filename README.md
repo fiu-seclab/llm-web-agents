@@ -33,6 +33,9 @@ The study investigates three core questions:
   Agent wrappers used in the experiments (`browser-use-app`, `seeact-app`,
   `open-manus-app`, `skyvern-app`) plus the screening runner and the
   browser-configuration grid (`browser_setup/`).
+- `paper-tables/`
+  The results reported in the paper's tables, as CSV. Per-trial logs,
+  recordings, Chrome profiles, and session state are not included.
 
 Default target hosts in the runners are placeholders (`*.example.test`).
 Point them at a testbed you own or have permission to test.

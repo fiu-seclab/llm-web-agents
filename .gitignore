@@ -9,6 +9,13 @@ third-party-services/constants.js
 third-party-services/captcha_samples
 .env
 artifacts/
+adhoc-scripts/
+scratch/
+*.mkv
 llm-based-crawlers/browser_setup/profiles/
+llm-based-crawlers/rq2_env_grid/
 llm-based-crawlers/experiment_runs/
+llm-based-crawlers/final_artifacts_*
+llm-based-crawlers/artifacts_safekeep_*/
 llm-based-crawlers/skyvern-app/Skyvern/
+llm-based-crawlers/skyvern-app/temp/

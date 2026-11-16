@@ -1,0 +1,43 @@
+captcha,variant,agent,deployment,successes,attempts
+hCaptcha,Easy,Browser-Use,cloud,20,20
+hCaptcha,Easy,Skyvern,cloud,8,20
+hCaptcha,Easy,Manus,cloud,0,20
+hCaptcha,Easy,BrowserOS,ai_browser,0,20
+hCaptcha,Easy,Comet,ai_browser,,
+hCaptcha,Easy,NanoBrowser,extension,0,20
+hCaptcha,Hard,Browser-Use,cloud,18,20
+hCaptcha,Hard,Skyvern,cloud,4,20
+hCaptcha,Hard,Manus,cloud,0,20
+hCaptcha,Hard,BrowserOS,ai_browser,0,20
+hCaptcha,Hard,Comet,ai_browser,,
+hCaptcha,Hard,NanoBrowser,extension,0,20
+reCaptcha v2,Checkbox,Browser-Use,cloud,20,20
+reCaptcha v2,Checkbox,Skyvern,cloud,14,20
+reCaptcha v2,Checkbox,Manus,cloud,0,20
+reCaptcha v2,Checkbox,BrowserOS,ai_browser,0,20
+reCaptcha v2,Checkbox,Comet,ai_browser,,
+reCaptcha v2,Checkbox,NanoBrowser,extension,0,20
+reCaptcha v2,Invisible,Browser-Use,cloud,19,20
+reCaptcha v2,Invisible,Skyvern,cloud,13,20
+reCaptcha v2,Invisible,Manus,cloud,0,20
+reCaptcha v2,Invisible,BrowserOS,ai_browser,0,20
+reCaptcha v2,Invisible,Comet,ai_browser,,
+reCaptcha v2,Invisible,NanoBrowser,extension,20,20
+reCaptcha v3,Score (>0.5),Browser-Use,cloud,0,20
+reCaptcha v3,Score (>0.5),Skyvern,cloud,0,20
+reCaptcha v3,Score (>0.5),Manus,cloud,0,20
+reCaptcha v3,Score (>0.5),BrowserOS,ai_browser,0,20
+reCaptcha v3,Score (>0.5),Comet,ai_browser,,
+reCaptcha v3,Score (>0.5),NanoBrowser,extension,20,20
+Cloudflare Turnstile,Managed,Browser-Use,cloud,20,20
+Cloudflare Turnstile,Managed,Skyvern,cloud,19,20
+Cloudflare Turnstile,Managed,Manus,cloud,0,20
+Cloudflare Turnstile,Managed,BrowserOS,ai_browser,0,20
+Cloudflare Turnstile,Managed,Comet,ai_browser,,
+Cloudflare Turnstile,Managed,NanoBrowser,extension,20,20
+Cloudflare Turnstile,Invisible,Browser-Use,cloud,20,20
+Cloudflare Turnstile,Invisible,Skyvern,cloud,0,20
+Cloudflare Turnstile,Invisible,Manus,cloud,0,20
+Cloudflare Turnstile,Invisible,BrowserOS,ai_browser,20,20
+Cloudflare Turnstile,Invisible,Comet,ai_browser,,
+Cloudflare Turnstile,Invisible,NanoBrowser,extension,20,20
