@@ -14,7 +14,7 @@ configurations.
 | Path | Contents |
 |---|---|
 | `third-party-services/` | Node.js pipeline that submits tasks to each solver service and verifies the returned tokens against the vendor's verification endpoint. |
-| `llm-based-crawlers/` | Wrappers for the self-hosted agents (`browser-use-app`, `seeact-app`, `open-manus-app`, `skyvern-app`) and the screening runner `run_screening_experiments.py`. |
+| `llm-based-crawlers/` | Wrappers for the self-hosted agents (`browser-use-app`, `seeact-app`, `open-manus-app`, `skyvern-app`), the screening runner `run_screening_experiments.py`, and the RQ3 model-comparison runner `run_rq3_model_experiments.py`. |
 | `llm-based-crawlers/browser_setup/` | Browser-configuration grid: one agent held fixed across instrumented, Chrome incognito, Chrome cold-profile, and Chrome full-profile launches. |
 | `paper-tables/` | The results reported in the paper's tables and figures, as CSV. See `paper-tables/README.md`. |
 

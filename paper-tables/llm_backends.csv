@@ -1,11 +1,13 @@
-model,input_mode,agent,attempts,completion_pct,avg_time_s,avg_tokens
-GPT-5.6-Luna,Vision + DOM,Skyvern,100,99,83.64,11192
-GPT-5.6-Luna,Vision + DOM,Browser-Use,100,99,35.63,25242
-GPT-4o-mini,Vision + DOM,Skyvern,100,99,103.42,77416
-GPT-4o-mini,Vision + DOM,Browser-Use,100,98,77.09,31857
-llama3-70b-instruct,DOM only,Skyvern,100,97,205.74,6390
-llama3-70b-instruct,DOM only,Browser-Use,100,97,135.65,25586
-gpt-oss-120b,DOM only,Skyvern,100,55,125.64,7900
-gpt-oss-120b,DOM only,Browser-Use,100,98,56.03,30984
-deepseek-v3-0324,DOM only,Skyvern,100,93,203.69,6723
-deepseek-v3-0324,DOM only,Browser-Use,100,73,75.78,12468
+model,input_mode,agent,attempts,avg_time_s,avg_tokens
+GPT-5.6-Luna,Vision + DOM,Skyvern,20,38.5,15338
+GPT-5.6-Luna,Vision + DOM,Browser-Use,20,29.4,26864
+GPT-5.4-mini,Vision + DOM,Skyvern,20,33.3,25193
+GPT-5.4-mini,Vision + DOM,Browser-Use,20,23.2,26916
+GPT-4o-mini,Vision + DOM,Skyvern,20,54.8,344934
+GPT-4o-mini,Vision + DOM,Browser-Use,20,50.8,306680
+GLM-5.3-Flash,Vision + DOM,Skyvern,20,117.2,17896
+GLM-5.3-Flash,Vision + DOM,Browser-Use,20,150.7,56424
+DeepSeek-V4.1-Flash,DOM only,Skyvern,20,41.0,10102
+DeepSeek-V4.1-Flash,DOM only,Browser-Use,20,50.9,54827
+GPT-5.6-Luna,DOM only,Skyvern,20,48.0,8466
+GPT-5.6-Luna,DOM only,Browser-Use,20,36.2,27606

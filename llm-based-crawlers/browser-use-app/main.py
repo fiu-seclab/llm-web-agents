@@ -81,6 +81,11 @@ def _build_browser():
     )
 
 
+def _use_vision():
+    raw = os.getenv("AGENT_USE_VISION", "true").strip().lower()
+    return raw in {"1", "true", "yes", "y", "on"}
+
+
 def _configure_human_actions():
     humanize.apply()
 
@@ -93,7 +98,7 @@ def _build_llm():
         if not api_key:
             raise ValueError("OPENAI_API_KEY is required when LLM_PROVIDER=openai")
 
-        model = os.getenv("OPENAI_MODEL", "o4-mini").strip()
+        model = os.getenv("OPENAI_MODEL", "gpt-5-mini").strip()
         base_url = os.getenv("OPENAI_BASE_URL", "").strip()
 
         kwargs = {"model": model, "api_key": api_key}
@@ -672,6 +677,8 @@ def _save_run_cost(
         "experiment_trial": os.getenv("EXPERIMENT_TRIAL", "").strip() or None,
         "result_name": unique_stem,
         "target_url": target_url,
+        "model": os.getenv("OPENAI_MODEL", "gpt-5-mini").strip(),
+        "input_mode": "vision+dom" if _use_vision() else "dom-only",
         "env_config": _env_config() or None,
         "instrument": _instrument() or None,
         "cdp_url": _cdp_url(),
@@ -741,6 +748,7 @@ async def _run_for_url(target_url, llm, terminal_log_path=None, use_stream_tee=T
             task=_build_prompt(target_url),
             browser=browser,
             llm=llm,
+            use_vision=_use_vision(),
             calculate_cost=True,
         )
 
