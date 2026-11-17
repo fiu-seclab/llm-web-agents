@@ -1,6 +1,6 @@
 model,input_mode,agent,attempts,completion_pct,avg_time_s,avg_tokens
-GPT-5.6-Luna,Vision + DOM,Skyvern,100,99,83.64,40875
-GPT-5.6-Luna,Vision + DOM,Browser-Use,100,99,35.63,40284
+GPT-5.6-Luna,Vision + DOM,Skyvern,100,99,83.64,11192
+GPT-5.6-Luna,Vision + DOM,Browser-Use,100,99,35.63,25242
 GPT-4o-mini,Vision + DOM,Skyvern,100,99,103.42,77416
 GPT-4o-mini,Vision + DOM,Browser-Use,100,98,77.09,31857
 llama3-70b-instruct,DOM only,Skyvern,100,97,205.74,6390
